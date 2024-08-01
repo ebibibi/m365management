@@ -1,4 +1,4 @@
-# Export-TeamsMembers.ps1
+# Export-TeamsMembers_IncludeChannels.ps1
 
 このスクリプトは下記を出力するスクリプトです。
 
