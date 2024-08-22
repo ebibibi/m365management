@@ -1,0 +1,3 @@
+# Add-SecondaryAddressToMailbox.ps1
+
+このスクリプトは指定されたメールボックスに、セカンダリアドレスを追加するスクリプトです。

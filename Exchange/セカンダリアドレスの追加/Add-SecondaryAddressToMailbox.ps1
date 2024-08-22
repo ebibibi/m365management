@@ -1,6 +1,6 @@
 param (
-    [string]$SharedMailbox,
-    [string]$User
+    [string]$Mailbox,
+    [string]$email
 )
 
 # Exchange Onlineに接続済みかどうかを判定する関数
@@ -42,13 +42,26 @@ if (-not (Test-ExchangeOnlineConnection)) {
     Write-Host "既にExchange Onlineに接続されています。"
 }
 
-# フルメールボックスアクセス権限を付与します
-Add-MailboxPermission -Identity $SharedMailbox -User $User -AccessRights FullAccess -InheritanceType All -Confirm:$false
-Write-Host "ユーザー '$User' に '$SharedMailbox' へのフルメールボックスアクセス権限を付与しました。"
+try {
+    # 既存のメールアドレスリストを取得
+    $existingEmails = Get-Mailbox -Identity $Mailbox -ErrorAction Stop | Select-Object -ExpandProperty EmailAddresses
 
-# メールボックス所有者として送信する権限を付与します
-Add-RecipientPermission -Identity $SharedMailbox -Trustee $User -AccessRights SendAs -Confirm:$false
-Write-Host "ユーザー '$User' に '$SharedMailbox' から送信する権限 (SendAs) を付与しました。"
+    # 既存のメールアドレスリストを表示
+    Write-Output "メールボックス '$Mailbox' のメールアドレスリスト:"
+    $existingEmails | ForEach-Object { Write-Output "  $_" }
 
-# 終了
-Write-Host "権限の付与が完了しました。"
+    if ($existingEmails -contains "smtp:$email") {
+        Write-Output "エイリアス '$email' は既にメールボックス '$Mailbox' に存在します。"
+    } else {
+        # 新しいメールアドレスを追加
+        $newEmails = $existingEmails + "smtp:$email"
+
+        # メールアドレスリストを更新
+        Set-Mailbox -Identity $Mailbox -EmailAddresses $newEmails -ErrorAction Stop
+
+        Write-Output "セカンダリメールアドレス '$email' をメールボックス '$Mailbox' に追加しました。"
+    }
+}
+catch {
+    Write-Error "エラーが発生しました: $_"
+}
