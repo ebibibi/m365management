@@ -50,6 +50,9 @@ try {
     Write-Output "メールボックス '$Mailbox' のメールアドレスリスト:"
     $existingEmails | ForEach-Object { Write-Output "  $_" }
 
+    # 既存のメールアドレスリストを mailaddresses.txt に出力(毎回上書き)
+    $existingEmails | Out-File -FilePath mailaddresses.txt -Encoding utf8 -Force
+
     if ($existingEmails -contains "smtp:$email") {
         Write-Output "エイリアス '$email' は既にメールボックス '$Mailbox' に存在します。"
     } else {
