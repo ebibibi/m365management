@@ -29,7 +29,7 @@ if (-not (Test-ExchangeOnlineConnection)) {
         }
         
         # 対話的に接続を試みる
-        Connect-ExchangeOnline -ShowProgress $false -DisableWAM
+        Connect-ExchangeOnline -ShowProgress $false #-DisableWAM
         Write-Host "Exchange Onlineに接続しました。"
     } catch {
         Write-Error "Exchange Online Management モジュールの読み込みまたは接続に失敗しました: $($_.Exception.Message)"
