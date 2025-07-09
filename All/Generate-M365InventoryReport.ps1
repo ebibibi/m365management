@@ -141,11 +141,47 @@ function Get-Teams {
 function Get-TeamMembers {
     param([string[]]$TeamIds)
     $results = @()
+    $teamLookup = @{}
+    # Create lookup table for team names
+    foreach ($team in $Teams) {
+        $teamLookup[$team.Id] = $team.DisplayName
+    }
+    
     foreach ($tid in $TeamIds) {
+        $teamName = $teamLookup[$tid]
         Log "   Members for Team $tid"
         try {
-            $members = Get-MgGroupMember -GroupId $tid -All | Select-Object @{N='ParentTeamId';E={$tid}},Id,DisplayName,UserPrincipalName,AdditionalProperties
-            $results += $members
+            $members = Get-MgGroupMember -GroupId $tid -All
+            foreach ($member in $members) {
+                # Get full user details
+                try {
+                    if ($member.AdditionalProperties['@odata.type'] -eq '#microsoft.graph.user') {
+                        $userDetails = Get-MgUser -UserId $member.Id -Property 'displayName,userPrincipalName,mail,userType' -ErrorAction SilentlyContinue
+                        $results += [PSCustomObject]@{
+                            ParentTeamId = $tid
+                            ParentTeamName = $teamName
+                            MemberId = $member.Id
+                            MemberDisplayName = $userDetails.DisplayName
+                            MemberUPN = $userDetails.UserPrincipalName
+                            MemberEmail = $userDetails.Mail
+                            MemberType = $userDetails.UserType
+                        }
+                    } else {
+                        # For non-user members (groups, etc.)
+                        $results += [PSCustomObject]@{
+                            ParentTeamId = $tid
+                            ParentTeamName = $teamName
+                            MemberId = $member.Id
+                            MemberDisplayName = $member.AdditionalProperties['displayName']
+                            MemberUPN = ''
+                            MemberEmail = ''
+                            MemberType = 'Group/Other'
+                        }
+                    }
+                } catch {
+                    Log "Failed to get details for member ${member.Id}: $($_.Exception.Message)" 'WARN'
+                }
+            }
         } catch {
             Log "Failed to get members for ${tid}: $($_.Exception.Message)" 'WARN'
         }
@@ -156,11 +192,34 @@ function Get-TeamMembers {
 function Get-TeamOwners {
     param([string[]]$TeamIds)
     $results = @()
+    $teamLookup = @{}
+    # Create lookup table for team names
+    foreach ($team in $Teams) {
+        $teamLookup[$team.Id] = $team.DisplayName
+    }
+    
     foreach ($tid in $TeamIds) {
+        $teamName = $teamLookup[$tid]
         Log "   Owners for Team $tid"
         try {
-            $owners = Get-MgGroupOwner -GroupId $tid | Select-Object @{N='ParentTeamId';E={$tid}},Id,DisplayName,UserPrincipalName
-            $results += $owners
+            $owners = Get-MgGroupOwner -GroupId $tid
+            foreach ($owner in $owners) {
+                # Get full user details
+                try {
+                    $userDetails = Get-MgUser -UserId $owner.Id -Property 'displayName,userPrincipalName,mail,userType' -ErrorAction SilentlyContinue
+                    $results += [PSCustomObject]@{
+                        ParentTeamId = $tid
+                        ParentTeamName = $teamName
+                        OwnerId = $owner.Id
+                        OwnerDisplayName = $userDetails.DisplayName
+                        OwnerUPN = $userDetails.UserPrincipalName
+                        OwnerEmail = $userDetails.Mail
+                        OwnerType = $userDetails.UserType
+                    }
+                } catch {
+                    Log "Failed to get details for owner ${owner.Id}: $($_.Exception.Message)" 'WARN'
+                }
+            }
         } catch {
             Log "Failed to get owners for ${tid}: $($_.Exception.Message)" 'WARN'
         }
@@ -186,19 +245,111 @@ function Get-DistributionGroups {
 }
 
 function Get-DLMembers {
-    param([string[]]$DLIds)
+    param($DistributionGroups)
     $results=@()
-    foreach ($dl in $DLIds) {
+    foreach ($dlObj in $DistributionGroups) {
+        $dl = $dlObj.PrimarySmtpAddress
+        if ([string]::IsNullOrWhiteSpace($dl)) { 
+            $dl = $dlObj.Alias
+        }
         if ([string]::IsNullOrWhiteSpace($dl)) { continue }
+        
         Log "   Members for DL $dl"
         try {
-            $members = Get-DistributionGroupMember -Identity $dl -ResultSize Unlimited |
-                Select-Object @{N='ParentDL';E={$dl}},PrimarySmtpAddress,DisplayName
-            $results += $members
+            $members = Get-DistributionGroupMember -Identity $dl -ResultSize Unlimited
+            foreach ($member in $members) {
+                $results += [PSCustomObject]@{
+                    ParentDL = $dl
+                    ParentDLName = $dlObj.DisplayName
+                    MemberPrimarySMTP = $member.PrimarySmtpAddress
+                    MemberDisplayName = $member.DisplayName
+                    MemberAlias = $member.Alias
+                    MemberType = $member.RecipientType
+                    MemberRecipientTypeDetails = $member.RecipientTypeDetails
+                }
+            }
         } catch {
             Log "Failed to get DL members for ${dl}: $($_.Exception.Message)" 'WARN'
         }
     }
+    $results
+}
+
+function Get-SharedMailboxPermissions {
+    param($SharedMailboxes)
+    $results = @()
+    Log 'Collecting Shared Mailbox Permissions...'
+    
+    foreach ($mb in $SharedMailboxes) {
+        $mbIdentity = $mb.PrimarySmtpAddress
+        if ([string]::IsNullOrWhiteSpace($mbIdentity)) { 
+            $mbIdentity = $mb.UserPrincipalName 
+        }
+        if ([string]::IsNullOrWhiteSpace($mbIdentity)) { continue }
+        
+        Log "   Permissions for Shared Mailbox $mbIdentity"
+        
+        # Get FullAccess permissions
+        try {
+            $fullAccessPerms = Get-ExoMailboxPermission -Identity $mbIdentity | 
+                Where-Object { $_.User -notlike 'NT AUTHORITY\*' -and $_.User -notlike 'S-1-5-*' -and $_.IsInherited -eq $false }
+            
+            foreach ($perm in $fullAccessPerms) {
+                $results += [PSCustomObject]@{
+                    SharedMailbox = $mbIdentity
+                    SharedMailboxName = $mb.DisplayName
+                    User = $perm.User
+                    AccessRights = ($perm.AccessRights -join ',')
+                    PermissionType = 'FullAccess'
+                    IsInherited = $perm.IsInherited
+                    Deny = $perm.Deny
+                }
+            }
+        } catch {
+            Log "Failed to get FullAccess permissions for ${mbIdentity}: $($_.Exception.Message)" 'WARN'
+        }
+        
+        # Get SendAs permissions
+        try {
+            $sendAsPerms = Get-ExoRecipientPermission -Identity $mbIdentity | 
+                Where-Object { $_.Trustee -notlike 'NT AUTHORITY\*' -and $_.Trustee -notlike 'S-1-5-*' }
+            
+            foreach ($perm in $sendAsPerms) {
+                $results += [PSCustomObject]@{
+                    SharedMailbox = $mbIdentity
+                    SharedMailboxName = $mb.DisplayName
+                    User = $perm.Trustee
+                    AccessRights = ($perm.AccessRights -join ',')
+                    PermissionType = 'SendAs'
+                    IsInherited = $perm.IsInherited
+                    Deny = $false  # Get-ExoRecipientPermission doesn't have Deny property
+                }
+            }
+        } catch {
+            Log "Failed to get SendAs permissions for ${mbIdentity}: $($_.Exception.Message)" 'WARN'
+        }
+        
+        # Get SendOnBehalf permissions
+        try {
+            $mailbox = Get-ExoMailbox -Identity $mbIdentity -Properties GrantSendOnBehalfTo
+            if ($mailbox.GrantSendOnBehalfTo) {
+                foreach ($trustee in $mailbox.GrantSendOnBehalfTo) {
+                    $results += [PSCustomObject]@{
+                        SharedMailbox = $mbIdentity
+                        SharedMailboxName = $mb.DisplayName
+                        User = $trustee
+                        AccessRights = 'SendOnBehalf'
+                        PermissionType = 'SendOnBehalf'
+                        IsInherited = $false
+                        Deny = $false
+                    }
+                }
+            }
+        } catch {
+            Log "Failed to get SendOnBehalf permissions for ${mbIdentity}: $($_.Exception.Message)" 'WARN'
+        }
+    }
+    
     $results
 }
 #endregion
@@ -208,11 +359,12 @@ $Users            = Get-Users
 $Guests           = Get-Guests
 $Groups           = Get-Groups
 $Teams            = Get-Teams
-$TeamMembers      = Get-TeamMembers -TeamIds $Teams.id
-$TeamOwners       = Get-TeamOwners  -TeamIds $Teams.id
+$TeamMembers      = if ($Teams) { Get-TeamMembers -TeamIds $Teams.id } else { @() }
+$TeamOwners       = if ($Teams) { Get-TeamOwners  -TeamIds $Teams.id } else { @() }
 $SharedMailboxes  = Get-SharedMailboxes
+$SharedMailboxPermissions = if ($SharedMailboxes) { Get-SharedMailboxPermissions -SharedMailboxes $SharedMailboxes } else { @() }
 $DLs              = Get-DistributionGroups
-$DLMembers        = Get-DLMembers -DLIds $DLs.Guid
+$DLMembers        = if ($DLs) { Get-DLMembers -DistributionGroups $DLs } else { @() }
 #endregion
 
 #region ── Export
@@ -226,6 +378,7 @@ if ($UsingExcel) {
     if ($TeamMembers -and @($TeamMembers).Count -gt 0)     { $TeamMembers     | Export-Excel @params -WorksheetName TeamMembers    -FreezeTopRow -TableName 'TeamMembers' }
     if ($TeamOwners -and @($TeamOwners).Count -gt 0)      { $TeamOwners      | Export-Excel @params -WorksheetName TeamOwners     -FreezeTopRow -TableName 'TeamOwners' }
     if ($SharedMailboxes -and @($SharedMailboxes).Count -gt 0) { $SharedMailboxes | Export-Excel @params -WorksheetName SharedMailboxes -FreezeTopRow -TableName 'SharedMailboxes' }
+    if ($SharedMailboxPermissions -and @($SharedMailboxPermissions).Count -gt 0) { $SharedMailboxPermissions | Export-Excel @params -WorksheetName SharedMailboxPerms -FreezeTopRow -TableName 'SharedMailboxPerms' }
     if ($DLs -and @($DLs).Count -gt 0)             { $DLs             | Export-Excel @params -WorksheetName DistributionGroups -FreezeTopRow -TableName 'DistributionGroups' }
     if ($DLMembers -and @($DLMembers).Count -gt 0)       { $DLMembers       | Export-Excel @params -WorksheetName DLMembers      -FreezeTopRow -TableName 'DLMembers' }
     Log "Excel report saved to $ExcelPath"
@@ -238,6 +391,7 @@ if ($UsingExcel) {
     $TeamMembers     | Export-Csv (Join-Path $OutputDir 'TeamMembers.csv')      -NoTypeInfo -Encoding UTF8
     $TeamOwners      | Export-Csv (Join-Path $OutputDir 'TeamOwners.csv')       -NoTypeInfo -Encoding UTF8
     $SharedMailboxes | Export-Csv (Join-Path $OutputDir 'SharedMailboxes.csv')  -NoTypeInfo -Encoding UTF8
+    $SharedMailboxPermissions | Export-Csv (Join-Path $OutputDir 'SharedMailboxPermissions.csv') -NoTypeInfo -Encoding UTF8
     $DLs             | Export-Csv (Join-Path $OutputDir 'DistributionGroups.csv') -NoTypeInfo -Encoding UTF8
     $DLMembers       | Export-Csv (Join-Path $OutputDir 'DLMembers.csv')        -NoTypeInfo -Encoding UTF8
     Log "CSV files created in $OutputDir"

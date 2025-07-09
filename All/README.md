@@ -13,6 +13,7 @@ Microsoft 365 テナント内の構成情報を一括取得し、棚卸し・ク
 | TeamMembers | チームごとのメンバー (Owner/Member/Guest) |
 | TeamOwners | チームごとの所有者 |
 | SharedMailboxes | 共有メールボックス、最終ログオン、容量 等 |
+| SharedMailboxPerms | 共有メールボックスの権限一覧（FullAccess, SendAs, SendOnBehalf） |
 | DistributionGroups | 配布/セキュリティ グループ (EXO) |
 | DLMembers | 配布グループごとのメンバー |
 
