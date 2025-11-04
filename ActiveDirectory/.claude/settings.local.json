@@ -3,7 +3,9 @@
     "allow": [
       "Bash(dir \"C:\\repos\\m365management\\ActiveDirectory\\Invoke-ADStaleInventory\")",
       "Bash(Get-ChildItem \"C:\\repos\\m365management\\ActiveDirectory\\Invoke-ADStaleInventory\")",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(powershell.exe -Command \"Get-Command .\\Invoke-ADStaleInventory.ps1 | Select-Object -ExpandProperty ScriptBlock | Out-Null; Write-Host ''スクリプトの構文チェック: OK'' -ForegroundColor Green\")",
+      "Bash(powershell.exe -NoProfile -Command \"& { . .\\Invoke-ADStaleInventory.ps1 -Help }\")"
     ],
     "deny": [],
     "ask": []

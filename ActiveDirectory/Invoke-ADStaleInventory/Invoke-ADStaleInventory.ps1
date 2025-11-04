@@ -1,10 +1,20 @@
+﻿# ===== スクリプトパラメータ =====
+param(
+    [int]$InactiveDays = 90,
+    [string]$OutputPath,
+    [switch]$CheckDns = $true,
+    [switch]$CheckSites = $true,
+    [switch]$Help
+)
+
+# ===== 関数定義 =====
 function Invoke-ADStaleInventory {
     [CmdletBinding()]
     param(
         [int]$InactiveDays = 90,
         [string]$OutputPath,
-        [switch]$CheckDns = $true,   # ★ DNS残骸チェック（自動でDCから選択）
-        [switch]$CheckSites = $true  # ★ 追加：サイト/サブネット/サイトリンクの健全性チェック
+        [switch]$CheckDns = $true,
+        [switch]$CheckSites = $true
     )
 
     # ===== 共通：準備 =====
@@ -381,16 +391,6 @@ function Invoke-ADStaleInventory {
 }
 
 # ===== メインスクリプト実行部 =====
-# 関数が定義されているので、直接実行時は関数を呼び出す
-# パラメータの処理
-param(
-    [int]$InactiveDays = 90,
-    [string]$OutputPath,
-    [switch]$CheckDns = $true,
-    [switch]$CheckSites = $true,
-    [switch]$Help
-)
-
 if ($Help) {
     Write-Host @"
 ===== Invoke-ADStaleInventory.ps1 =====
