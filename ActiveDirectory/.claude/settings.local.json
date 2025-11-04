@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"C:\\repos\\m365management\\ActiveDirectory\\Invoke-ADStaleInventory\")",
+      "Bash(Get-ChildItem \"C:\\repos\\m365management\\ActiveDirectory\\Invoke-ADStaleInventory\")",
+      "Bash(tree:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
