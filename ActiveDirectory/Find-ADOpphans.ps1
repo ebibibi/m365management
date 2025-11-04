@@ -4,10 +4,10 @@ function Invoke-ADStaleInventory {
         [int]$InactiveDays = 90,
         [string]$OutputPath,
         [string]$DnsServer,
-        [switch]$CheckSites = $true  # â˜… è¿½åŠ ï¼šã‚µã‚¤ãƒˆ/ã‚µãƒ–ãƒãƒƒãƒˆ/ã‚µã‚¤ãƒˆãƒªãƒ³ã‚¯ã®å¥å…¨æ€§ãƒã‚§ãƒƒã‚¯
+        [switch]$CheckSites = $true  # š ’Ç‰ÁFƒTƒCƒg/ƒTƒuƒlƒbƒg/ƒTƒCƒgƒŠƒ“ƒN‚ÌŒ’‘S«ƒ`ƒFƒbƒN
     )
 
-    # ===== å…±é€šï¼šæº–å‚™ =====
+    # ===== ‹¤’ÊF€”õ =====
     $now = Get-Date
     $inactiveThresholdDate = $now.AddDays(-1 * $InactiveDays)
 
@@ -17,7 +17,7 @@ function Invoke-ADStaleInventory {
 
     $results = New-Object System.Collections.Generic.List[object]
 
-    # ===== 1. DCãƒ¡ã‚¿ãƒ‡ãƒ¼ã‚¿ï¼ˆå‰å›ã¨åŒç­‰ï¼‰ =====
+    # ===== 1. DCƒƒ^ƒf[ƒ^i‘O‰ñ‚Æ“¯“™j =====
     $liveDCs = Get-ADDomainController -Filter * -ErrorAction SilentlyContinue |
         Select-Object HostName,Name,IPv4Address,Site,ComputerObjectDN
 
@@ -60,25 +60,25 @@ function Invoke-ADStaleInventory {
                 Category           = 'DC-Metadata'
                 Name               = $row.DNSHostName
                 DN                 = $row.ServerObjectDN
-                Detail             = 'NTDS/Serverã¯å­˜åœ¨ã™ã‚‹ãŒç¨¼åƒDCã¨ã—ã¦è¦‹ãˆãªã„ã€‚é™æ ¼å¾Œãƒ¡ã‚¿ãƒ‡ãƒ¼ã‚¿æ®‹éª¸ã®å¯èƒ½æ€§ã€‚'
+                Detail             = 'NTDS/Server‚Í‘¶İ‚·‚é‚ª‰Ò“­DC‚Æ‚µ‚ÄŒ©‚¦‚È‚¢B~ŠiŒãƒƒ^ƒf[ƒ^cŠ[‚Ì‰Â”\«B'
                 LastSeen           = $lastSeen
                 Confidence         = 'High'
-                RecommendedAction  = 'ntdsutilç­‰ã§ãƒ¡ã‚¿ãƒ‡ãƒ¼ã‚¿ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—æ¤œè¨ (è¦æ…é‡)'
+                RecommendedAction  = 'ntdsutil“™‚Åƒƒ^ƒf[ƒ^ƒNƒŠ[ƒ“ƒAƒbƒvŒŸ“¢ (—vTd)'
             })
         } elseif (-not $row.ComputerDN) {
             $results.Add([pscustomobject]@{
                 Category           = 'DC-Metadata'
                 Name               = $row.DNSHostName
                 DN                 = $row.ServerObjectDN
-                Detail             = 'DCã¯ç¨¼åƒä¸­ã ãŒå¯¾å¿œComputerã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆãŒè¦‹ã¤ã‹ã‚‰ãªã„ã€‚'
+                Detail             = 'DC‚Í‰Ò“­’†‚¾‚ª‘Î‰ComputerƒIƒuƒWƒFƒNƒg‚ªŒ©‚Â‚©‚ç‚È‚¢B'
                 LastSeen           = $null
                 Confidence         = 'Medium'
-                RecommendedAction  = 'Computerã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®å­˜åœ¨/OUã‚’ç¢ºèª'
+                RecommendedAction  = 'ComputerƒIƒuƒWƒFƒNƒg‚Ì‘¶İ/OU‚ğŠm”F'
             })
         }
     }
 
-    # ===== 2. ä½¿ã‚ã‚Œã¦ã„ãªã„ã‚³ãƒ³ãƒ”ãƒ¥ãƒ¼ã‚¿ =====
+    # ===== 2. g‚í‚ê‚Ä‚¢‚È‚¢ƒRƒ“ƒsƒ…[ƒ^ =====
     $computers = Get-ADComputer -Filter * -Properties lastLogonTimestamp,whenCreated,Enabled,OperatingSystem,PasswordLastSet -ErrorAction SilentlyContinue
     foreach ($c in $computers) {
         $llts = $null
@@ -88,19 +88,19 @@ function Invoke-ADStaleInventory {
         $isStaleByCreateOnly = (-not $llts -and $c.whenCreated -lt $inactiveThresholdDate.AddDays(-$InactiveDays))
         if ($isDisabled -or $isStaleByLogon -or $isStaleByCreateOnly) {
             $detailBits = @()
-            if ($isDisabled) { $detailBits += "ã‚¢ã‚«ã‚¦ãƒ³ãƒˆãŒç„¡åŠ¹(Disabled)" }
-            if ($isStaleByLogon) { $detailBits += "æœ€çµ‚ãƒ­ã‚°ã‚ªãƒ³ãŒ $InactiveDays æ—¥ã‚ˆã‚Šå¤ã„ ($llts)" }
-            if ($isStaleByCreateOnly) { $detailBits += "ä½œæˆã‹ã‚‰é•·æœŸæœªä½¿ç”¨ (lastLogonTimestampãªã—)" }
+            if ($isDisabled) { $detailBits += "ƒAƒJƒEƒ“ƒg‚ª–³Œø(Disabled)" }
+            if ($isStaleByLogon) { $detailBits += "ÅIƒƒOƒIƒ“‚ª $InactiveDays “ú‚æ‚èŒÃ‚¢ ($llts)" }
+            if ($isStaleByCreateOnly) { $detailBits += "ì¬‚©‚ç’·Šú–¢g—p (lastLogonTimestamp‚È‚µ)" }
             $confidence = if ($isDisabled) { 'High' } elseif ($isStaleByLogon) { 'Medium' } else { 'Low' }
             $results.Add([pscustomobject]@{
                 Category='Stale-Computer'; Name=$c.Name; DN=$c.DistinguishedName;
                 Detail = ($detailBits -join '; '); LastSeen=$llts; Confidence=$confidence;
-                RecommendedAction='æ‹…å½“éƒ¨ç½²ã«ç¢ºèªå¾Œã€ç„¡åŠ¹åŒ–/å‰Šé™¤ã‚„OUéš”é›¢ã‚’æ¤œè¨'
+                RecommendedAction='’S“–•”‚ÉŠm”FŒãA–³Œø‰»/íœ‚âOUŠu—£‚ğŒŸ“¢'
             })
         }
     }
 
-    # ===== 3. ä½¿ã‚ã‚Œã¦ã„ãªã„ãƒ¦ãƒ¼ã‚¶ãƒ¼ =====
+    # ===== 3. g‚í‚ê‚Ä‚¢‚È‚¢ƒ†[ƒU[ =====
     $users = Get-ADUser -Filter * -Properties lastLogonTimestamp,Enabled,whenCreated,PasswordNeverExpires,PasswordLastSet -ErrorAction SilentlyContinue
     foreach ($u in $users) {
         $ullts = $null
@@ -110,20 +110,20 @@ function Invoke-ADStaleInventory {
         $isOldNoLogon   = (-not $ullts -and $u.whenCreated -lt $inactiveThresholdDate.AddDays(-$InactiveDays))
         if ($isDisabledUser -or $isInactiveUser -or $isOldNoLogon) {
             $detailBits = @()
-            if ($isDisabledUser) { $detailBits += "ã‚¢ã‚«ã‚¦ãƒ³ãƒˆãŒç„¡åŠ¹(Disabled)" }
-            if ($isInactiveUser) { $detailBits += "æœ€çµ‚ãƒ­ã‚°ã‚ªãƒ³ãŒ $InactiveDays æ—¥ã‚ˆã‚Šå¤ã„ ($ullts)" }
-            if ($isOldNoLogon)   { $detailBits += "ä½œæˆå¾Œã»ã¼æœªä½¿ç”¨(lastLogonTimestampãªã—)" }
-            if ($u.PasswordNeverExpires) { $detailBits += "PasswordNeverExpires=True(ã‚µãƒ¼ãƒ“ã‚¹/å…±æœ‰ã‚¢ã‚«ã‚¦ãƒ³ãƒˆã®å¯èƒ½æ€§)" }
+            if ($isDisabledUser) { $detailBits += "ƒAƒJƒEƒ“ƒg‚ª–³Œø(Disabled)" }
+            if ($isInactiveUser) { $detailBits += "ÅIƒƒOƒIƒ“‚ª $InactiveDays “ú‚æ‚èŒÃ‚¢ ($ullts)" }
+            if ($isOldNoLogon)   { $detailBits += "ì¬Œã‚Ù‚Ú–¢g—p(lastLogonTimestamp‚È‚µ)" }
+            if ($u.PasswordNeverExpires) { $detailBits += "PasswordNeverExpires=True(ƒT[ƒrƒX/‹¤—LƒAƒJƒEƒ“ƒg‚Ì‰Â”\«)" }
             $confidence = if ($isDisabledUser) { 'High' } elseif ($isInactiveUser) { 'Medium' } else { 'Low' }
             $results.Add([pscustomobject]@{
                 Category='Stale-User'; Name=$u.SamAccountName; DN=$u.DistinguishedName;
                 Detail = ($detailBits -join '; '); LastSeen=$ullts; Confidence=$confidence;
-                RecommendedAction='äººäº‹ãƒ»ä¸»ç®¡éƒ¨ç½²ã¨çªåˆã€‚ç„¡åŠ¹åŒ–æ¸ˆã¿ãªã‚‰å‰Šé™¤å€™è£œ/ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–OUã¸'
+                RecommendedAction='l–EåŠÇ•”‚Æ“Ë‡B–³Œø‰»Ï‚İ‚È‚çíœŒó•â/ƒA[ƒJƒCƒuOU‚Ö'
             })
         }
     }
 
-    # ===== 4. (ä»»æ„) é™æ ¼DCåã®DNSæ®‹éª¸ =====
+    # ===== 4. (”CˆÓ) ~ŠiDC–¼‚ÌDNScŠ[ =====
     if ($DnsServer) {
         $suspectDCs = $results | Where-Object { $_.Category -eq 'DC-Metadata' -and $_.Confidence -eq 'High' -and $_.Name }
         foreach ($dc in $suspectDCs) {
@@ -142,18 +142,18 @@ function Invoke-ADStaleInventory {
             if ($dnsRecords -and $dnsRecords.Count -gt 0) {
                 $results.Add([pscustomobject]@{
                     Category='Stale-DC-DNS'; Name=$hostFqdn; DN="DNS:$DnsServer";
-                    Detail="é™æ ¼æ¸ˆã¿ç–‘ã„ã®DC [$hostFqdn] ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ãŒDNSã«æ®‹ã£ã¦ã„ã‚‹å¯èƒ½æ€§";
+                    Detail="~ŠiÏ‚İ‹^‚¢‚ÌDC [$hostFqdn] ‚ÌƒŒƒR[ƒh‚ªDNS‚Éc‚Á‚Ä‚¢‚é‰Â”\«";
                     LastSeen=$null; Confidence='High';
-                    RecommendedAction='DNSã®A/SRV/CNAMEã‚’æ‰‹å‹•ã§ç¢ºèªãƒ»æƒé™¤'
+                    RecommendedAction='DNS‚ÌA/SRV/CNAME‚ğè“®‚ÅŠm”FE‘|œ'
                 })
             }
         }
     }
 
-    # ===== 5. â˜… ã‚µã‚¤ãƒˆ/ã‚µãƒ–ãƒãƒƒãƒˆ/ã‚µã‚¤ãƒˆãƒªãƒ³ã‚¯ã®å¥å…¨æ€§ãƒã‚§ãƒƒã‚¯ =====
+    # ===== 5. š ƒTƒCƒg/ƒTƒuƒlƒbƒg/ƒTƒCƒgƒŠƒ“ƒN‚ÌŒ’‘S«ƒ`ƒFƒbƒN =====
     if ($CheckSites) {
 
-        # 5-0. åé›†
+        # 5-0. ûW
         $sitesBase = "CN=Sites,$configNC"
         $allSites = Get-ADObject -SearchBase $sitesBase -LDAPFilter '(objectClass=site)' -Properties distinguishedName,name -ErrorAction SilentlyContinue
 
@@ -168,7 +168,7 @@ function Invoke-ADStaleInventory {
             $siteLinks += Get-ADObject -SearchBase $path -LDAPFilter '(objectClass=siteLink)' -Properties siteList,name,distinguishedName -ErrorAction SilentlyContinue
         }
 
-        # 5-1. å„ã‚µã‚¤ãƒˆã®ã‚µãƒ¼ãƒãƒ¼æ•°ãƒ»ã‚µãƒ–ãƒãƒƒãƒˆæ•°ãƒ»ãƒªãƒ³ã‚¯å‚ç…§æ•°
+        # 5-1. ŠeƒTƒCƒg‚ÌƒT[ƒo[”EƒTƒuƒlƒbƒg”EƒŠƒ“ƒNQÆ”
         $siteReferencedSet = [System.Collections.Generic.HashSet[string]]::new()
         foreach ($lnk in $siteLinks) {
             if ($lnk.siteList) { foreach ($dn in @($lnk.siteList)) { [void]$siteReferencedSet.Add($dn) } }
@@ -184,43 +184,43 @@ function Invoke-ADStaleInventory {
             $subnetCount = ($allSubnets | Where-Object { $_.siteObject -eq $site.DistinguishedName }).Count
             $linkCount = if ($siteReferencedSet.Contains($site.DistinguishedName)) { 1 } else { 0 }
 
-            # ãƒ‘ã‚¿ãƒ¼ãƒ³åˆ¤å®š
+            # ƒpƒ^[ƒ“”»’è
             if ($serverCount -eq 0 -and $subnetCount -eq 0 -and $linkCount -eq 0) {
                 $results.Add([pscustomobject]@{
                     Category='AD-Site'; Name=$site.Name; DN=$site.DistinguishedName;
-                    Detail='ã‚µãƒ¼ãƒãƒ¼/ã‚µãƒ–ãƒãƒƒãƒˆ/ã‚µã‚¤ãƒˆãƒªãƒ³ã‚¯ã„ãšã‚Œã‹ã‚‰ã‚‚å‚ç…§ã•ã‚Œãªã„ç©ºã‚µã‚¤ãƒˆ';
+                    Detail='ƒT[ƒo[/ƒTƒuƒlƒbƒg/ƒTƒCƒgƒŠƒ“ƒN‚¢‚¸‚ê‚©‚ç‚àQÆ‚³‚ê‚È‚¢‹óƒTƒCƒg';
                     LastSeen=$null; Confidence='High';
-                    RecommendedAction='ä¾å­˜ã‚’å†ç¢ºèªã®ã†ãˆã‚µã‚¤ãƒˆå‰Šé™¤å€™è£œ'
+                    RecommendedAction='ˆË‘¶‚ğÄŠm”F‚Ì‚¤‚¦ƒTƒCƒgíœŒó•â'
                 })
             }
             elseif ($serverCount -eq 0 -and $subnetCount -gt 0) {
                 $results.Add([pscustomobject]@{
                     Category='AD-Site'; Name=$site.Name; DN=$site.DistinguishedName;
-                    Detail="ã‚µãƒ–ãƒãƒƒãƒˆã¯å‰²å½“æ¸ˆã¿ã ãŒã‚µãƒ¼ãƒãƒ¼ç„¡ã—ï¼ˆæ”¯åº—ã‚µã‚¤ãƒˆã§DCãªã—é‹ç”¨ãªã‚‰æ­£å¸¸ã®å¯èƒ½æ€§ï¼‰";
+                    Detail="ƒTƒuƒlƒbƒg‚ÍŠ„“–Ï‚İ‚¾‚ªƒT[ƒo[–³‚µix“XƒTƒCƒg‚ÅDC‚È‚µ‰^—p‚È‚ç³í‚Ì‰Â”\«j";
                     LastSeen=$null; Confidence='Medium';
-                    RecommendedAction='æ„å›³é€šã‚Šãªã‚‰ç¶­æŒã€ä¸è¦ãªã‚‰ã‚µãƒ–ãƒãƒƒãƒˆçµ±åˆ/ã‚µã‚¤ãƒˆå‰Šé™¤ã‚’æ¤œè¨'
+                    RecommendedAction='ˆÓ}’Ê‚è‚È‚çˆÛA•s—v‚È‚çƒTƒuƒlƒbƒg“‡/ƒTƒCƒgíœ‚ğŒŸ“¢'
                 })
             }
             elseif ($serverCount -gt 0 -and $subnetCount -eq 0) {
                 $results.Add([pscustomobject]@{
                     Category='AD-Site'; Name=$site.Name; DN=$site.DistinguishedName;
-                    Detail="ã‚µãƒ¼ãƒãƒ¼æœ‰ã‚Šã ãŒã‚µãƒ–ãƒãƒƒãƒˆæœªå‰²å½“ï¼ˆã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã®ã‚µã‚¤ãƒˆåˆ¤å®šãŒä¸å®‰å®šï¼‰";
+                    Detail="ƒT[ƒo[—L‚è‚¾‚ªƒTƒuƒlƒbƒg–¢Š„“–iƒNƒ‰ƒCƒAƒ“ƒg‚ÌƒTƒCƒg”»’è‚ª•sˆÀ’èj";
                     LastSeen=$null; Confidence='Medium';
-                    RecommendedAction='è©²å½“æ‹ ç‚¹ã®ã‚µãƒ–ãƒãƒƒãƒˆã‚’ä½œæˆã—ã‚µã‚¤ãƒˆã«å‰²å½“'
+                    RecommendedAction='ŠY“–‹’“_‚ÌƒTƒuƒlƒbƒg‚ğì¬‚µƒTƒCƒg‚ÉŠ„“–'
                 })
             }
 
             if ($serverCount -gt 0 -and $linkCount -eq 0 -and $allSites.Count -gt 1) {
                 $results.Add([pscustomobject]@{
                     Category='AD-Site'; Name=$site.Name; DN=$site.DistinguishedName;
-                    Detail="è¤‡æ•°ã‚µã‚¤ãƒˆæ§‹æˆãªã®ã«ã‚µã‚¤ãƒˆãƒªãƒ³ã‚¯ã«æœªå‚åŠ ï¼ˆãƒ¬ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³çµŒè·¯ãŒç„¡ã„å¯èƒ½æ€§ï¼‰";
+                    Detail="•¡”ƒTƒCƒg\¬‚È‚Ì‚ÉƒTƒCƒgƒŠƒ“ƒN‚É–¢Q‰ÁiƒŒƒvƒŠƒP[ƒVƒ‡ƒ“Œo˜H‚ª–³‚¢‰Â”\«j";
                     LastSeen=$null; Confidence='High';
-                    RecommendedAction='siteLinkã¸å½“è©²ã‚µã‚¤ãƒˆã‚’è¿½åŠ ï¼ˆæ—¢å­˜ãƒªãƒ³ã‚¯ã«è¿½åŠ  or æ–°è¦ä½œæˆï¼‰'
+                    RecommendedAction='siteLink‚Ö“–ŠYƒTƒCƒg‚ğ’Ç‰ÁiŠù‘¶ƒŠƒ“ƒN‚É’Ç‰Á or V‹Kì¬j'
                 })
             }
         }
 
-        # 5-2. ã‚µãƒ–ãƒãƒƒãƒˆã®ä¸æ•´åˆãƒ»é‡è¤‡/ã‚ªãƒ¼ãƒãƒ¼ãƒ©ãƒƒãƒ—
+        # 5-2. ƒTƒuƒlƒbƒg‚Ì•s®‡Ed•¡/ƒI[ƒo[ƒ‰ƒbƒv
         function ConvertTo-IPv4Int([string]$ip) {
             $p = $ip.Split('.'); if ($p.Count -ne 4) { return $null }
             try { [uint32]($p[0] -shl 24 -bor ($p[1] -shl 16) -bor ($p[2] -shl 8) -bor $p[3]) } catch { return $null }
@@ -237,29 +237,29 @@ function Invoke-ADStaleInventory {
             [pscustomobject]@{ CIDR=$cidr; Prefix=$prefix; Mask=$mask; Net=$network; Lower=$lower; Upper=$upper }
         }
 
-        # ã‚µãƒ–ãƒãƒƒãƒˆæ•´åˆæ€§
+        # ƒTƒuƒlƒbƒg®‡«
         foreach ($sn in $allSubnets) {
             $snSite = $sn.siteObject
             if (-not $snSite) {
                 $results.Add([pscustomobject]@{
                     Category='AD-Subnet'; Name=$sn.Name; DN=$sn.DistinguishedName;
-                    Detail='ã©ã®ã‚µã‚¤ãƒˆã«ã‚‚å‰²ã‚Šå½“ã¦ã‚‰ã‚Œã¦ã„ãªã„ã‚µãƒ–ãƒãƒƒãƒˆ';
+                    Detail='‚Ç‚ÌƒTƒCƒg‚É‚àŠ„‚è“–‚Ä‚ç‚ê‚Ä‚¢‚È‚¢ƒTƒuƒlƒbƒg';
                     LastSeen=$null; Confidence='High';
-                    RecommendedAction='é©åˆ‡ãªã‚µã‚¤ãƒˆã«å‰²å½“ or ä¸è¦ãªã‚‰å‰Šé™¤'
+                    RecommendedAction='“KØ‚ÈƒTƒCƒg‚ÉŠ„“– or •s—v‚È‚çíœ'
                 })
                 continue
             }
             if (-not $siteMap.ContainsKey($snSite)) {
                 $results.Add([pscustomobject]@{
                     Category='AD-Subnet'; Name=$sn.Name; DN=$sn.DistinguishedName;
-                    Detail='å­˜åœ¨ã—ãªã„ã‚µã‚¤ãƒˆã‚’å‚ç…§ã—ã¦ã„ã‚‹ã‚µãƒ–ãƒãƒƒãƒˆ';
+                    Detail='‘¶İ‚µ‚È‚¢ƒTƒCƒg‚ğQÆ‚µ‚Ä‚¢‚éƒTƒuƒlƒbƒg';
                     LastSeen=$null; Confidence='High';
-                    RecommendedAction='æ­£ã—ã„ã‚µã‚¤ãƒˆã¸å‰²å½“ã—ç›´ã™ or ã‚µãƒ–ãƒãƒƒãƒˆå‰Šé™¤'
+                    RecommendedAction='³‚µ‚¢ƒTƒCƒg‚ÖŠ„“–‚µ’¼‚· or ƒTƒuƒlƒbƒgíœ'
                 })
             }
         }
 
-        # é‡è¤‡/ã‚ªãƒ¼ãƒãƒ¼ãƒ©ãƒƒãƒ—æ¤œå‡ºï¼ˆIPv4ã®ã¿ï¼‰
+        # d•¡/ƒI[ƒo[ƒ‰ƒbƒvŒŸoiIPv4‚Ì‚İj
         $rangeItems = @()
         foreach ($sn in $allSubnets) {
             $cidr = $sn.Name
@@ -270,48 +270,48 @@ function Invoke-ADStaleInventory {
                     Lower=$r.Lower; Upper=$r.Upper; Prefix=$r.Prefix
                 }
             } else {
-                # ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆä¸æ­£/IPv6ãªã©ã¯è»½ã‚ã«æ³¨æ„
+                # ƒtƒH[ƒ}ƒbƒg•s³/IPv6‚È‚Ç‚ÍŒy‚ß‚É’ˆÓ
                 $results.Add([pscustomobject]@{
                     Category='AD-Subnet'; Name=$sn.Name; DN=$sn.DistinguishedName;
-                    Detail='CIDRè¡¨è¨˜ã®è§£æã«å¤±æ•—ï¼ˆIPv6ã¾ãŸã¯è¡¨è¨˜ã‚†ã‚Œã®å¯èƒ½æ€§ï¼‰';
+                    Detail='CIDR•\‹L‚Ì‰ğÍ‚É¸”siIPv6‚Ü‚½‚Í•\‹L‚ä‚ê‚Ì‰Â”\«j';
                     LastSeen=$null; Confidence='Low';
-                    RecommendedAction='è¡¨è¨˜ã®çµ±ä¸€ or IPv6ã¯åˆ¥é€”ãƒ¬ãƒ“ãƒ¥ãƒ¼'
+                    RecommendedAction='•\‹L‚Ì“ˆê or IPv6‚Í•Ê“rƒŒƒrƒ…['
                 })
             }
         }
 
-        # O(n^2)ç°¡æ˜“ãƒã‚§ãƒƒã‚¯ï¼ˆæ•°ç™¾å€‹è¦æ¨¡ãªã‚‰è¨±å®¹ï¼‰
+        # O(n^2)ŠÈˆÕƒ`ƒFƒbƒNi”•SŒÂ‹K–Í‚È‚ç‹–—ej
         for ($i=0; $i -lt $rangeItems.Count; $i++) {
             for ($j=$i+1; $j -lt $rangeItems.Count; $j++) {
                 $a = $rangeItems[$i]; $b = $rangeItems[$j]
-                # å®Œå…¨é‡è¤‡
+                # Š®‘Sd•¡
                 if ($a.CIDR -eq $b.CIDR) {
                     $results.Add([pscustomobject]@{
                         Category='AD-Subnet';
                         Name="$($a.CIDR) (duplicate)";
                         DN="$($a.SubnetDN) | $($b.SubnetDN)";
-                        Detail='åŒä¸€CIDRã®ã‚µãƒ–ãƒãƒƒãƒˆãŒè¤‡æ•°å­˜åœ¨';
+                        Detail='“¯ˆêCIDR‚ÌƒTƒuƒlƒbƒg‚ª•¡”‘¶İ';
                         LastSeen=$null; Confidence='High';
-                        RecommendedAction='ã©ã¡ã‚‰ã‹ç‰‡æ–¹ã‚’å‰Šé™¤ï¼ˆå‰²å½“ã‚µã‚¤ãƒˆã‚’ç¢ºèªã®ã†ãˆçµ±åˆï¼‰'
+                        RecommendedAction='‚Ç‚¿‚ç‚©•Ğ•û‚ğíœiŠ„“–ƒTƒCƒg‚ğŠm”F‚Ì‚¤‚¦“‡j'
                     })
                     continue
                 }
-                # ã‚ªãƒ¼ãƒãƒ¼ãƒ©ãƒƒãƒ—ï¼ˆç¯„å›²ãŒäº¤å·®ï¼‰
+                # ƒI[ƒo[ƒ‰ƒbƒvi”ÍˆÍ‚ªŒğ·j
                 $overlap = -not( ($a.Upper -lt $b.Lower) -or ($b.Upper -lt $a.Lower) )
                 if ($overlap) {
                     $results.Add([pscustomobject]@{
                         Category='AD-Subnet';
-                        Name="$($a.CIDR) â†” $($b.CIDR)";
+                        Name="$($a.CIDR) ? $($b.CIDR)";
                         DN="$($a.SubnetDN) | $($b.SubnetDN)";
-                        Detail='ã‚µãƒ–ãƒãƒƒãƒˆç¯„å›²ãŒã‚ªãƒ¼ãƒãƒ¼ãƒ©ãƒƒãƒ—ï¼ˆã‚µã‚¤ãƒˆåˆ¤å®šãŒä¸å®‰å®šã«ãªã‚Šã¾ã™ï¼‰';
+                        Detail='ƒTƒuƒlƒbƒg”ÍˆÍ‚ªƒI[ƒo[ƒ‰ƒbƒviƒTƒCƒg”»’è‚ª•sˆÀ’è‚É‚È‚è‚Ü‚·j';
                         LastSeen=$null; Confidence='High';
-                        RecommendedAction='CIDRã‚’è¦‹ç›´ã—ã€é‡è¤‡/åŒ…å«é–¢ä¿‚ã‚’è§£æ¶ˆ'
+                        RecommendedAction='CIDR‚ğŒ©’¼‚µAd•¡/•ïŠÜŠÖŒW‚ğ‰ğÁ'
                     })
                 }
             }
         }
 
-        # 5-3. ã‚µã‚¤ãƒˆãƒªãƒ³ã‚¯ã®å¥å…¨æ€§
+        # 5-3. ƒTƒCƒgƒŠƒ“ƒN‚ÌŒ’‘S«
         foreach ($lnk in $siteLinks) {
             $sitesInLink = @()
             if ($lnk.siteList) { $sitesInLink = @($lnk.siteList) }
@@ -319,25 +319,25 @@ function Invoke-ADStaleInventory {
             if ($count -lt 2) {
                 $results.Add([pscustomobject]@{
                     Category='AD-SiteLink'; Name=$lnk.Name; DN=$lnk.DistinguishedName;
-                    Detail='ãƒªãƒ³ã‚¯ã«å«ã¾ã‚Œã‚‹ã‚µã‚¤ãƒˆãŒ2ã¤æœªæº€ï¼ˆãƒ¬ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³çµŒè·¯ã¨ã—ã¦ç„¡åŠ¹ï¼‰';
+                    Detail='ƒŠƒ“ƒN‚ÉŠÜ‚Ü‚ê‚éƒTƒCƒg‚ª2‚Â–¢–iƒŒƒvƒŠƒP[ƒVƒ‡ƒ“Œo˜H‚Æ‚µ‚Ä–³Œøj';
                     LastSeen=$null; Confidence='High';
-                    RecommendedAction='å¯¾è±¡ã‚µã‚¤ãƒˆã‚’2ã¤ä»¥ä¸Šè¨­å®š or ä¸è¦ãªã‚‰ãƒªãƒ³ã‚¯å‰Šé™¤'
+                    RecommendedAction='‘ÎÛƒTƒCƒg‚ğ2‚ÂˆÈãİ’è or •s—v‚È‚çƒŠƒ“ƒNíœ'
                 })
             }
             foreach ($sdn in $sitesInLink) {
                 if (-not $siteMap.ContainsKey($sdn)) {
                     $results.Add([pscustomobject]@{
                         Category='AD-SiteLink'; Name=$lnk.Name; DN=$lnk.DistinguishedName;
-                        Detail="å­˜åœ¨ã—ãªã„ã‚µã‚¤ãƒˆ [$sdn] ã‚’å‚ç…§ã—ã¦ã„ã‚‹ã‚µã‚¤ãƒˆãƒªãƒ³ã‚¯";
+                        Detail="‘¶İ‚µ‚È‚¢ƒTƒCƒg [$sdn] ‚ğQÆ‚µ‚Ä‚¢‚éƒTƒCƒgƒŠƒ“ƒN";
                         LastSeen=$null; Confidence='High';
-                        RecommendedAction='siteList ã‹ã‚‰ä¸æ­£å‚ç…§ã‚’é™¤å»'
+                        RecommendedAction='siteList ‚©‚ç•s³QÆ‚ğœ‹'
                     })
                 }
             }
         }
     }
 
-    # ===== å‡ºåŠ›æ•´å½¢ãƒ»ä¿å­˜ =====
+    # ===== o—Í®Œ`E•Û‘¶ =====
     $order = @{ 'High' = 0; 'Medium' = 1; 'Low' = 2 }
     $final = $results | Sort-Object {
         if ($order.ContainsKey($_.Confidence)) { $order[$_.Confidence] } else { 9 }
@@ -353,19 +353,19 @@ function Invoke-ADStaleInventory {
             $final | Where-Object { $_.Category -eq $cat } |
                 Export-Csv (Join-Path $OutputPath "AD-StaleInventory-$cat-$timestamp.csv") -NoTypeInformation -Encoding UTF8
         }
-        Write-Host "[INFO] CSVã‚’æ›¸ãå‡ºã—ã¾ã—ãŸ: $OutputPath" -ForegroundColor Green
+        Write-Host "[INFO] CSV‚ğ‘‚«o‚µ‚Ü‚µ‚½: $OutputPath" -ForegroundColor Green
     }
 
     return $final
 }
 
-<# å®Ÿè¡Œä¾‹
-# ã‚µã‚¤ãƒˆå¥å…¨æ€§ãƒã‚§ãƒƒã‚¯è¾¼ã¿ï¼ˆæ—¢å®šã§æœ‰åŠ¹ï¼‰
+<# Às—á
+# ƒTƒCƒgŒ’‘S«ƒ`ƒFƒbƒN‚İiŠù’è‚Å—LŒøj
 Invoke-ADStaleInventory -OutputPath "C:\Temp\AD-StaleReport"
 
-# ã‚µãƒ–ãƒãƒƒãƒˆ/ã‚µã‚¤ãƒˆãƒªãƒ³ã‚¯å«ã‚€ãŒDNSã¯ä¸è¦
+# ƒTƒuƒlƒbƒg/ƒTƒCƒgƒŠƒ“ƒNŠÜ‚Ş‚ªDNS‚Í•s—v
 Invoke-ADStaleInventory -CheckSites -InactiveDays 180
 
-# é™æ ¼DCã®DNSæ®‹éª¸ã¾ã§è¦‹ã‚‹
+# ~ŠiDC‚ÌDNScŠ[‚Ü‚ÅŒ©‚é
 Invoke-ADStaleInventory -DnsServer "dc01.contoso.local" -OutputPath "C:\Temp\AD-StaleReport"
 #>
