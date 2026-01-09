@@ -13,30 +13,12 @@ function Test-ExchangeOnlineConnection {
     }
 }
 
-# マネージドIDでの接続を試みる関数
-function Connect-ExchangeOnlineWithManagedIdentity {
-    try {
-        # マネージドIDでの接続を試みる
-        Import-Module -Name Microsoft.Identity.Client
-        Connect-ExchangeOnline -ManagedIdentity -ShowProgress $false
-        return $true
-    } catch {
-        # エラーを無視して、falseを返す
-        return $false
-    }
-}
-
 # Exchange Onlineに接続されていない場合のみ接続を実行
 if (-not (Test-ExchangeOnlineConnection)) {
-    # まずマネージドIDでの接続を試みる
-    $connected = Connect-ExchangeOnlineWithManagedIdentity
-
-    # マネージドIDでの接続が失敗した場合、対話的に接続を試みる
-    if (-not $connected) {
-        Import-Module ExchangeOnlineManagement
-        Connect-ExchangeOnline -ShowProgress $false
-        Write-Host "Exchange Onlineに接続しました。"
-    }
+    Import-Module ExchangeOnlineManagement
+    # デバイスコード認証で接続（GUI環境がなくても動作する）
+    Connect-ExchangeOnline -Device -ShowProgress $false
+    Write-Host "Exchange Onlineに接続しました。"
 } else {
     Write-Host "既にExchange Onlineに接続されています。"
 }

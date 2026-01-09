@@ -60,7 +60,8 @@ try {
         "Team.ReadBasic.All",
         "Channel.ReadBasic.All"
     )
-    Connect-MgGraph -Scopes $Scopes -NoWelcome
+    # デバイスコード認証で接続（GUI環境がなくても動作する）
+    Connect-MgGraph -Scopes $Scopes -NoWelcome -UseDeviceCode
     Write-Host "Graph consent completed." -ForegroundColor Green
     Disconnect-MgGraph
 } catch {
@@ -74,7 +75,8 @@ try {
     Import-Module ExchangeOnlineManagement -ErrorAction Stop
     # close old sessions
     Get-PSSession | Where-Object { $_.ConfigurationName -eq 'Microsoft.Exchange' } | Remove-PSSession -ErrorAction SilentlyContinue
-    Connect-ExchangeOnline -DisableWAM
+    # デバイスコード認証で接続（GUI環境がなくても動作する）
+    Connect-ExchangeOnline -Device
     Write-Host "Exchange Online connected. Closing session..." -ForegroundColor Green
     Disconnect-ExchangeOnline -Confirm:$false
 } catch {

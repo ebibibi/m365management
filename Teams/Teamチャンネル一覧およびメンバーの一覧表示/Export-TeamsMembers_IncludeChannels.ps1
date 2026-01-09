@@ -4,8 +4,8 @@
 # Import the Microsoft Teams module
 Import-Module MicrosoftTeams
 
-# Connect to Microsoft Teams
-Connect-MicrosoftTeams
+# デバイスコード認証で接続（GUI環境がなくても動作する）
+Connect-MicrosoftTeams -UseDeviceAuthentication
 
 # Get the list of Teams
 $teams = Get-Team

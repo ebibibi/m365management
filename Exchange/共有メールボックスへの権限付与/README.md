@@ -30,3 +30,12 @@ mailbox3@example.com
 
 この方法では、PowerShellの入力制限に悩まされることなく、大量のメールボックスを処理できます。
 
+## 前提条件
+
+- PowerShell 7 以上
+- ExchangeOnlineManagement モジュール
+
+## 認証について
+
+スクリプト実行時にExchange Onlineに未接続の場合、デバイスコード認証が行われます。
+表示されるコードを https://microsoft.com/devicelogin で入力して認証してください。

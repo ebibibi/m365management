@@ -33,6 +33,11 @@ Microsoft 365 テナント内の構成情報を一括取得し、棚卸し・ク
 
 > **初回実行前に** `Setup-InventoryReportPrereqs.ps1` を実行してモジュールのインストールと Graph/EXO への管理者同意 (Consent) を取得してください。
 
+## 認証について
+
+すべてのスクリプトはデバイスコード認証を使用します。
+実行時に表示されるコードを https://microsoft.com/devicelogin で入力して認証してください。
+
 ---
 
 ## セットアップ手順

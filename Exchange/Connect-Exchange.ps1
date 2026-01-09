@@ -27,9 +27,9 @@ Write-Host "使用するバージョン: $($latestModule.Version)" -ForegroundCo
 Import-Module -ModuleInfo $latestModule -Force -DisableNameChecking -Verbose
 Write-Host "バージョン $($latestModule.Version) を読み込みました" -ForegroundColor Green
 
-# WAMを無効にして接続
+# デバイスコード認証で接続（GUI環境がなくても動作する）
 try {
-    Connect-ExchangeOnline -DisableWAM
+    Connect-ExchangeOnline -Device
     Write-Host "Exchange Onlineに接続しました" -ForegroundColor Green
     
     # 接続情報を表示

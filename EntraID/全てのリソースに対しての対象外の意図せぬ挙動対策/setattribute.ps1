@@ -1,5 +1,5 @@
-# Microsoft Graph SDK に接続（対話型）
-Connect-MgGraph -Scopes "Application.ReadWrite.All", "Directory.ReadWrite.All", "CustomSecAttributeAssignment.ReadWrite.All", "Application.Read.All", "CustomSecAttributeAssignment.Read.All", "Application.Read.All"
+# Microsoft Graph SDK に接続（デバイスコード認証）
+Connect-MgGraph -Scopes "Application.ReadWrite.All", "Directory.ReadWrite.All", "CustomSecAttributeAssignment.ReadWrite.All", "Application.Read.All", "CustomSecAttributeAssignment.Read.All" -UseDeviceCode
 
 # 除外対象アプリの ObjectId または DisplayName のリストをここに記述
 $excludedAppNames = @(

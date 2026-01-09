@@ -17,19 +17,11 @@ function Test-ExchangeOnlineConnection {
 # Exchange Onlineに接続されていない場合のみ接続を実行
 if (-not (Test-ExchangeOnlineConnection)) {
     try {
-        # 3.8.0バージョンを明示的に指定してモジュールをインポート
-        $module = Get-Module -Name ExchangeOnlineManagement -ListAvailable | Where-Object {$_.Version -eq "3.8.0"} | Select-Object -First 1
-        if ($module) {
-            Import-Module -ModuleInfo $module -DisableNameChecking -Force
-            Write-Host "Exchange Online Management バージョン 3.8.0 モジュールを読み込みました。"
-        } else {
-            # 3.8.0が見つからない場合は通常のインポート
-            Import-Module ExchangeOnlineManagement -DisableNameChecking -Force
-            Write-Host "Exchange Online Management モジュールを読み込みました。"
-        }
-        
-        # 対話的に接続を試みる
-        Connect-ExchangeOnline -ShowProgress $false #-DisableWAM
+        Import-Module ExchangeOnlineManagement -DisableNameChecking -Force
+        Write-Host "Exchange Online Management モジュールを読み込みました。"
+
+        # デバイスコード認証で接続（GUI環境がなくても動作する）
+        Connect-ExchangeOnline -Device -ShowProgress $false
         Write-Host "Exchange Onlineに接続しました。"
     } catch {
         Write-Error "Exchange Online Management モジュールの読み込みまたは接続に失敗しました: $($_.Exception.Message)"

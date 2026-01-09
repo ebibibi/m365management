@@ -69,7 +69,8 @@ try {
             "Channel.ReadBasic.All"
         )
         Log "Connecting to Microsoft Graph ..."
-        Connect-MgGraph -NoWelcome -Scopes $Scopes
+        # デバイスコード認証で接続（GUI環境がなくても動作する）
+        Connect-MgGraph -NoWelcome -Scopes $Scopes -UseDeviceCode
     }
     Log "Connected to Graph as $((Get-MgContext).Account)"
 } catch {
@@ -82,7 +83,8 @@ try {
 try {
     if (-not (Get-PSSession | Where-Object { $_.ConfigurationName -eq 'Microsoft.Exchange' })) {
         Log "Connecting to Exchange Online ..."
-        Connect-ExchangeOnline -DisableWAM
+        # デバイスコード認証で接続（GUI環境がなくても動作する）
+        Connect-ExchangeOnline -Device
     }
     Log "Connected to Exchange Online."
 } catch {
