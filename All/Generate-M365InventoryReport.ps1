@@ -81,9 +81,17 @@ try {
 
 #region ── Connect to Exchange Online
 try {
-    # EXO V3 uses REST API, not PSSession. Check using Get-ConnectionInformation cmdlet.
-    $exoConnection = Get-ConnectionInformation -ErrorAction SilentlyContinue
-    if (-not $exoConnection) {
+    # Check for existing EXO connection using Get-ConnectionInformation (EXO V3+)
+    $needsConnection = $true
+    $getConnInfoCmd = Get-Command -Name Get-ConnectionInformation -Module ExchangeOnlineManagement -ErrorAction SilentlyContinue
+    if ($getConnInfoCmd) {
+        $exoConnection = & $getConnInfoCmd -ErrorAction SilentlyContinue
+        if ($exoConnection) {
+            $needsConnection = $false
+        }
+    }
+
+    if ($needsConnection) {
         Log "Connecting to Exchange Online ..."
         # デバイスコード認証で接続（GUI環境がなくても動作する）
         Connect-ExchangeOnline -Device
